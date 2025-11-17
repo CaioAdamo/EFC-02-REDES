@@ -22,6 +22,8 @@ class SRSender:
         self.packets = {}
         self.acked = set()
         self.timers = {}
+        self.retransmit_count = {}  # Track retransmissions per packet
+        self.max_retransmits = 30    # Limit retransmissions
         self.lock = threading.Lock()
         
         self.running = True
@@ -76,6 +78,20 @@ class SRSender:
     def _timeout(self, seq_num):
         with self.lock:
             if seq_num not in self.acked and seq_num in self.packets:
+                # Check retransmission limit
+                if seq_num not in self.retransmit_count:
+                    self.retransmit_count[seq_num] = 0
+                
+                if self.retransmit_count[seq_num] >= self.max_retransmits:
+                    self.logger.log_event(f"⚠️  Max retransmits reached for seq={seq_num}, giving up")
+                    # Mark as acked to move window
+                    self.acked.add(seq_num)
+                    if seq_num == self.base:
+                        while self.base in self.acked:
+                            self.base += 1
+                    return
+                
+                self.retransmit_count[seq_num] += 1
                 self.logger.log_timeout(f"Packet seq={seq_num}")
                 packet = self.packets[seq_num]
                 self._send_packet(packet, seq_num)
@@ -147,8 +163,24 @@ class SRReceiver:
     # Metodo para receber dados
     def receive_data(self, expected_count, timeout=30):
         self.socket.settimeout(0.5)
+        start_time = time.time()
+        last_progress = time.time()
+        last_count = 0
         
         while len(self.received_data) < expected_count and self.running:
+            # Check global timeout
+            if time.time() - start_time > timeout:
+                self.logger.log_event(f"⏰ Global timeout reached, received {len(self.received_data)}/{expected_count}")
+                break
+            
+            # Check progress timeout (no new packets for 5 seconds)
+            if len(self.received_data) != last_count:
+                last_progress = time.time()
+                last_count = len(self.received_data)
+            elif time.time() - last_progress > 5.0:
+                self.logger.log_event(f"⏰ No progress for 5s, stopping at {len(self.received_data)}/{expected_count}")
+                break
+            
             try:
                 data, sender_addr = self.socket.recvfrom(2048)
                 

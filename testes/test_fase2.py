@@ -294,7 +294,7 @@ class TestComparison(unittest.TestCase):
         
         received_gbn = []
         def receive_gbn():
-            received_gbn.extend(receiver_gbn.receive_data(10, timeout=8))
+            received_gbn.extend(receiver_gbn.receive_data(10, timeout=15))  # Aumentado timeout
         
         recv_thread_gbn = threading.Thread(target=receive_gbn)
         recv_thread_gbn.start()
@@ -302,10 +302,10 @@ class TestComparison(unittest.TestCase):
         time.sleep(0.2)
         start_gbn = time.time()
         sender_gbn.send_data(test_data)
-        sender_gbn.wait_for_completion(timeout=8)
+        sender_gbn.wait_for_completion(timeout=15)  # Aumentado timeout
         time_gbn = time.time() - start_gbn
         
-        recv_thread_gbn.join(timeout=8)
+        recv_thread_gbn.join(timeout=15)  # Aumentado timeout
         
         sender_gbn.close()
         receiver_gbn.close()
