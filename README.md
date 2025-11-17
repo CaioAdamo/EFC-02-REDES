@@ -5,7 +5,6 @@ Implementação de protocolos de transporte confiável em Python, incluindo RDT 
 ## 📋 Requisitos
 
 - Python 3.8 ou superior
-- Nenhuma dependência externa necessária (usa apenas bibliotecas padrão)
 
 ### Instalação do Python
 
@@ -158,107 +157,6 @@ python -m unittest testes.test_fase2.TestSR.test_sr_perfect_channel -v
 ```bash
 python -m unittest testes.test_fase3.TestTCPBasic.test_three_way_handshake -v
 ```
-
-## 📊 Status dos Testes
-
-**Última atualização**: 16 de novembro de 2025
-
-### ✅ Fase 1 - RDT (Reliable Data Transfer)
-**Status**: ✅ **100% COMPLETO** (9/9 testes passando)
-
-**Protocolos implementados**:
-- ✅ **RDT 2.0**: Stop-and-wait com ACK/NAK (detecção de corrupção)
-- ✅ **RDT 2.1**: Stop-and-wait com números de sequência (elimina duplicatas)
-- ✅ **RDT 3.0**: Stop-and-wait com timer (trata perdas e corrupção)
-
-**Testes validados**:
-- Canal perfeito (sem erros)
-- Corrupção de pacotes (20-30%)
-- Perda de pacotes (15%)
-- Perda + corrupção combinados
-- Throughput em cenários adversos
-
-### ⚠️ Fase 2 - Go-Back-N e Selective Repeat  
-**Status**: ⚠️ **77% FUNCIONAL** (10/13 testes passando, 2 skipados, 1 falha)
-
-**Protocolos implementados**:
-- ✅ **Go-Back-N (GBN)**: Pipelining com janela deslizante e retransmissão de toda a janela
-  - Canal perfeito ✅
-  - Janela deslizante ✅  
-  - Com perdas (10%) ✅
-- ✅ **Selective Repeat (SR)**: Pipelining com bufferização e retransmissão seletiva
-  - Canal perfeito ✅
-  - Bufferização de pacotes fora-de-ordem ✅
-  - ACKs individuais (não cumulativos) ✅
-  - Com perdas (10%) ✅
-
-**Testes obrigatórios**:
-- ✅ Eficiência GBN vs RDT 3.0
-- ✅ Perdas 10% GBN  
-- ✅ Perdas 10% SR
-- ✅ Ordenação SR (bufferização correta)
-- ⏭️ Análise de desempenho (skipado por isolamento de porta)
-
-**Problema conhecido**:
-- ❌ **test_throughput_comparison**: GBN entregando apenas 7/10 pacotes
-  - Possível causa: Timeout muito curto ou perda excessiva de ACKs
-  - **Workaround**: Testes individuais de GBN e SR passam perfeitamente
-
-### ⚠️ Fase 3 - TCP Simplificado
-**Status**: ⚠️ **25% FUNCIONAL** (2/8 testes passando)
-
-**Funcionalidades implementadas**:
-- ✅ **Three-way handshake** (SYN → SYN-ACK → ACK)
-- ✅ **Handshake com perdas** (retransmissão de SYN)
-- ⚠️ Data transfer (implementado mas falhando em testes)
-- ⚠️ Bidirectional transfer (implementado mas falhando)
-- ⚠️ Four-way close (implementado mas falhando)
-- ⚠️ Flow control (implementado mas falhando)
-
-**Testes passando**:
-- ✅ test_three_way_handshake
-- ✅ test_handshake_with_losses
-
-**Testes falhando** (6/8):
-- ❌ test_data_transfer: Recebe bytes vazios
-- ❌ test_bidirectional_transfer: Lista vazia no servidor
-- ❌ test_four_way_close: Estado permanece ESTABLISHED
-- ❌ test_large_data_transfer: 0 bytes recebidos
-- ❌ test_data_transfer_with_losses: Nenhum dado recebido
-- ❌ test_transfer_with_corruption: Nenhum dado recebido
-
-**Problemas conhecidos**:
-- Dados não chegam ao receptor (bytes vazios)
-- Máquina de estados não transiciona corretamente após handshake
-- Race conditions em sockets compartilhados
-- Thread de recepção pode não estar processando segmentos DATA
-
-## ⚠️ Problemas Comuns e Soluções
-
-### Python não encontrado
-- **Solução**: Instale o Python e certifique-se de marcar "Add Python to PATH"
-- Ou use o caminho completo: `C:\Python3X\python.exe -m unittest ...`
-
-### Erro de módulo não encontrado
-- **Solução**: Certifique-se de estar na pasta raiz do projeto ao executar
-- Verifique se todos os arquivos estão presentes nas pastas `fase1/`, `fase2/`, `fase3/`, `testes/` e `utils/`
-
-### Testes da Fase 3 com race conditions
-- **Solução**: Execute os testes da Fase 3 individualmente (veja Opção 3 acima)
-
-### Erro de encoding no Windows
-- **Solução**: O logger já está configurado para lidar com encoding UTF-8 no Windows automaticamente
-
-## 💡 Dicas
-
-- Use `-v` para saída verbosa (mostra cada teste)
-- Use `-k` para filtrar testes específicos: `python -m unittest -k "rdt" -v`
-- Para debugar, adicione `print()` nos arquivos de teste ou implementação
-- Os logs coloridos podem não aparecer corretamente em alguns terminais, mas não afetam a funcionalidade
-
-## 📝 Estrutura de Pacotes Python
-
-Todos os diretórios principais (`fase1`, `fase2`, `fase3`, `utils`) são pacotes Python válidos com `__init__.py` que exportam as classes principais.
 
 ## 📚 Referências
 
