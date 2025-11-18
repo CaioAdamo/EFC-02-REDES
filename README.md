@@ -60,46 +60,6 @@ EFC 02 REDES/
 ├── executar_teste.ps1  # Script PowerShell para executar testes
 └── README.md           # Este arquivo
 ```
-
-## 🔧 Convenções de Importação
-
-### Importar classes da Fase 1
-```python
-from fase1 import RDT20Sender, RDT20Receiver
-from fase1 import RDT21Sender, RDT21Receiver
-from fase1 import RDT30Sender, RDT30Receiver
-
-# Ou importar módulos específicos
-from fase1.rdt20 import RDT20Sender, RDT20Receiver
-```
-
-### Importar classes da Fase 2
-```python
-from fase2 import GBNSender, GBNReceiver
-from fase2 import SRSender, SRReceiver
-
-# Ou importar módulos específicos
-from fase2.gbn import GBNSender, GBNReceiver
-from fase2.sr import SRSender, SRReceiver
-```
-
-### Importar classes da Fase 3
-```python
-from fase3 import SimpleTCPSocket
-# Ou
-from fase3.tcp import SimpleTCPSocket
-# Ou
-from fase3.tcp_socket import SimpleTCPSocket
-```
-
-### Importar utilitários
-```python
-from utils import (
-    RDT20Packet, GBNPacket, SRPacket, TCPSegment,
-    ProtocolLogger, UnreliableChannel
-)
-```
-
 ## 🚀 Executando os Testes
 
 ### Opção 1: Script Automatizado (Recomendado)
