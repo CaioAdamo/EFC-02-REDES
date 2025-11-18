@@ -81,6 +81,7 @@ class SimpleTCPSocket:
         self.connection_event = threading.Event()
         self.data_available_event = threading.Event()
         self.close_event = threading.Event()
+        self.ack_received_event = threading.Event()
         
         self.accept_queue = deque()
         self.accept_event = threading.Event()
@@ -249,6 +250,9 @@ class SimpleTCPSocket:
                     self.timer = None
                     self.pending_segment = None
                 
+                # Sinalizar que ACK foi recebido
+                self.ack_received_event.set()
+                
                 sample_rtt = self.timeout_interval * 0.8
                 self._update_rtt(sample_rtt)
         
@@ -278,6 +282,7 @@ class SimpleTCPSocket:
             return
         
         if len(segment.data) > 0:
+            self.logger.log_event(f"Processando dados: seq={segment.seq_num}, esperado={self.next_seq_expected}, len={len(segment.data)}")
             if segment.seq_num == self.next_seq_expected:
                 self.recv_buffer.append(segment.data)
                 self.next_seq_expected += len(segment.data)
@@ -291,6 +296,11 @@ class SimpleTCPSocket:
                     self.ack_num = self.next_seq_expected
                 
                 self.data_available_event.set()
+            elif segment.seq_num > self.next_seq_expected:
+                self.logger.log_event(f"Dados fora de ordem: seq={segment.seq_num}, esperado={self.next_seq_expected}")
+                self.out_of_order_buffer[segment.seq_num] = segment.data
+            else:
+                self.logger.log_event(f"Dados duplicados ou antigos: seq={segment.seq_num}, esperado={self.next_seq_expected}")
             
             ack = TCPSegment(
                 self.src_port,
@@ -301,10 +311,6 @@ class SimpleTCPSocket:
                 self.BUFFER_SIZE
             )
             self._send_segment(ack, addr)
-            
-            if segment.seq_num > self.next_seq_expected:
-                self.logger.log_event(f"Dados fora de ordem: seq={segment.seq_num}, esperado={self.next_seq_expected}")
-                self.out_of_order_buffer[segment.seq_num] = segment.data
     
     # Trata evento especifico
     def _handle_fin_wait_1(self, segment, addr):
@@ -504,12 +510,25 @@ class SimpleTCPSocket:
                 chunk
             )
             
-            self._send_segment(segment, self.dst_addr)
+            # Limpar evento de ACK antes de enviar
+            self.ack_received_event.clear()
+            
+            with self.lock:
+                self._send_segment(segment, self.dst_addr)
+                self.pending_segment = segment
+                
+                # Configurar timer de retransmissão
+                if self.timer:
+                    self.timer.cancel()
+                self.timer = threading.Timer(self.timeout_interval, self._retransmit_data)
+                self.timer.daemon = True
+                self.timer.start()
             
             self.seq_num += len(chunk)
             offset += chunk_size
             
-            time.sleep(0.01)
+            # Aguardar ACK antes de enviar próximo segmento (com timeout)
+            self.ack_received_event.wait(timeout=self.timeout_interval * 10)
         
         return total_sent
     

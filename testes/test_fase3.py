@@ -106,6 +106,9 @@ class TestTCPBasic(unittest.TestCase):
         bytes_sent = client.send(test_data)
         self.assertEqual(bytes_sent, len(test_data))
         
+        # Aguardar processamento
+        time.sleep(0.5)
+        
         # Aguardar servidor receber
         thread.join(timeout=5.0)
         
@@ -161,6 +164,9 @@ class TestTCPBasic(unittest.TestCase):
         # Enviar para servidor
         client.send(client_data)
         
+        # Aguardar processamento
+        time.sleep(0.5)
+        
         # Receber do servidor
         data = b''
         while len(data) < len(server_data):
@@ -199,7 +205,7 @@ class TestTCPBasic(unittest.TestCase):
                 
                 # Cliente vai iniciar o fechamento
                 # Servidor deve entrar em CLOSE_WAIT
-                time.sleep(0.5)
+                time.sleep(1.0)
                 close_states.append(conn.state)
                 
                 conn.close()
@@ -291,7 +297,7 @@ class TestTCPReliability(unittest.TestCase):
             if conn:
                 data = b''
                 while len(data) < len(test_data):
-                    chunk = conn.recv(1024, timeout=3.0)
+                    chunk = conn.recv(1024, timeout=10.0)
                     if not chunk:
                         break
                     data += chunk
@@ -308,7 +314,10 @@ class TestTCPReliability(unittest.TestCase):
         client.connect('localhost', 5005)
         client.send(test_data)
         
-        thread.join(timeout=10.0)
+        # Aguardar processamento com retransmissões
+        time.sleep(5.0)
+        
+        thread.join(timeout=30.0)
         
         # Verificar integridade
         self.assertEqual(len(received_data), 1)
@@ -339,7 +348,7 @@ class TestTCPReliability(unittest.TestCase):
             if conn:
                 data = b''
                 while len(data) < len(test_data):
-                    chunk = conn.recv(1024, timeout=3.0)
+                    chunk = conn.recv(1024, timeout=5.0)
                     if not chunk:
                         break
                     data += chunk
@@ -356,7 +365,10 @@ class TestTCPReliability(unittest.TestCase):
         client.connect('localhost', 5006)
         client.send(test_data)
         
-        thread.join(timeout=10.0)
+        # Aguardar processamento com retransmissões
+        time.sleep(3.0)
+        
+        thread.join(timeout=20.0)
         
         # Dados devem chegar íntegros (corrupção detectada e descartada)
         self.assertEqual(len(received_data), 1)
@@ -375,7 +387,7 @@ class TestTCPFlowControl(unittest.TestCase):
     def tearDown(self):
         """Cleanup após cada teste"""
         # Dar tempo para sockets fecharem completamente
-        time.sleep(2.0)
+        time.sleep(3.0)
     
     def test_large_data_transfer(self):
         """Testa transferência de dados grandes (flow control)"""
